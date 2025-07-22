@@ -1,8 +1,8 @@
 package com.buyrecipe.demo.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "carts")
@@ -11,23 +11,12 @@ public class Cart {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "user_id", nullable = false)
-    private String userId;
+    @Column(name = "total_amount", nullable = false)
+    private Integer totalAmount;
     
-    @Column(name = "product_name", nullable = false)
-    private String productName;
-    
-    @Column(nullable = false)
-    private Integer quantity;
-    
-    @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal price;
-    
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-    
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("cart-cartitems")
+    private List<CartItem> cartItems;
     
     public Long getId() {
         return id;
@@ -37,51 +26,19 @@ public class Cart {
         this.id = id;
     }
     
-    public String getUserId() {
-        return userId;
+    public Integer getTotalAmount() {
+        return totalAmount;
     }
     
-    public void setUserId(String userId) {
-        this.userId = userId;
+    public void setTotalAmount(Integer totalAmount) {
+        this.totalAmount = totalAmount;
     }
     
-    public String getProductName() {
-        return productName;
+    public List<CartItem> getCartItems() {
+        return cartItems;
     }
     
-    public void setProductName(String productName) {
-        this.productName = productName;
-    }
-    
-    public Integer getQuantity() {
-        return quantity;
-    }
-    
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
-    }
-    
-    public BigDecimal getPrice() {
-        return price;
-    }
-    
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
-    
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-    
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-    
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setCartItems(List<CartItem> cartItems) {
+        this.cartItems = cartItems;
     }
 }
