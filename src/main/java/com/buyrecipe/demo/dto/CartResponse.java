@@ -10,9 +10,9 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class RecipeResponse {
+public class CartResponse {
     private Long id;
-    private String name;
-    private List<RecipeProductResponse> products;
+    private Integer totalAmount;
+    private List<CartItemResponse> cartItems;
     
 }

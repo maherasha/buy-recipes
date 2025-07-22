@@ -1,5 +1,7 @@
 package com.buyrecipe.demo.service;
 
+import com.buyrecipe.demo.dto.CartItemResponse;
+import com.buyrecipe.demo.dto.CartResponse;
 import com.buyrecipe.demo.model.*;
 import com.buyrecipe.demo.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class CartService {
@@ -24,8 +27,24 @@ public class CartService {
         return cartRepository.findAll();
     }
     
-    public Optional<Cart> getCartById(Long id) {
-        return cartRepository.findById(id);
+    public Optional<CartResponse> getCartById(Long id) {
+        Optional<Cart> cartOpt = cartRepository.findById(id);
+        return cartOpt.map(this::convertToCartResponse);
+    }
+    
+    private CartResponse convertToCartResponse(Cart cart) {
+        List<CartItem> cartItems = cartItemRepository.findByCartId(cart.getId());
+        List<CartItemResponse> cartItemResponses = cartItems.stream()
+            .map(item -> new CartItemResponse(
+                item.getId(),
+                item.getProduct().getId(),
+                item.getProduct().getName(),
+                item.getProduct().getPriceInCents(),
+                item.getQuantity()
+            ))
+            .collect(Collectors.toList());
+        
+        return new CartResponse(cart.getId(), cart.getTotalAmount(), cartItemResponses);
     }
     
     public String addRecipeToCart(Long cartId, Long recipeId) {
@@ -42,17 +61,35 @@ public class CartService {
         
         Cart cart = cartOpt.get();
         Recipe recipe = recipeOpt.get();
+        List<CartItem> existingItems = cartItemRepository.findByCartId(cartId);
         
-        // Add all products from the recipe to the cart
+        // Add all products from the recipe to the cart using quantity
         int totalAdded = 0;
         for (RecipeProduct recipeProduct : recipe.getRecipeProducts()) {
-            for (int i = 0; i < recipeProduct.getQuantity(); i++) {
+            Product product = recipeProduct.getProduct();
+            Integer quantityToAdd = recipeProduct.getQuantity();
+            
+            // Check if product already exists in cart
+            Optional<CartItem> existingItem = existingItems.stream()
+                .filter(item -> item.getProduct().getId().equals(product.getId()))
+                .findFirst();
+            
+            if (existingItem.isPresent()) {
+                // Update existing item quantity
+                CartItem item = existingItem.get();
+                item.setQuantity(item.getQuantity() + quantityToAdd);
+                cartItemRepository.save(item);
+            } else {
+                // Create new cart item
                 CartItem cartItem = new CartItem();
-                cartItem.setCart(cart);
-                cartItem.setProduct(recipeProduct.getProduct());
+                cartItem.setCartId(cart.getId());
+                cartItem.setProduct(product);
+                cartItem.setQuantity(quantityToAdd);
                 cartItemRepository.save(cartItem);
-                totalAdded += recipeProduct.getProduct().getPriceInCents();
+                existingItems.add(cartItem);
             }
+            
+            totalAdded += product.getPriceInCents() * quantityToAdd;
         }
         
         // Update cart total amount
@@ -76,25 +113,34 @@ public class CartService {
         
         Cart cart = cartOpt.get();
         Recipe recipe = recipeOpt.get();
+        List<CartItem> cartItems = cartItemRepository.findByCartId(cartId);
         
-        // Remove products from the cart that belong to this recipe
+        // Remove products from the cart using quantity logic
         int totalRemoved = 0;
-        List<CartItem> cartItems = cart.getCartItems();
-        
         for (RecipeProduct recipeProduct : recipe.getRecipeProducts()) {
-            Product productToRemove = recipeProduct.getProduct();
-            int quantityToRemove = recipeProduct.getQuantity();
+            Product product = recipeProduct.getProduct();
+            Integer quantityToRemove = recipeProduct.getQuantity();
             
-            for (int i = 0; i < quantityToRemove && i < cartItems.size(); i++) {
-                CartItem itemToRemove = cartItems.stream()
-                    .filter(item -> item.getProduct().getId().equals(productToRemove.getId()))
-                    .findFirst()
-                    .orElse(null);
+            // Find the cart item for this product
+            Optional<CartItem> cartItemOpt = cartItems.stream()
+                .filter(item -> item.getProduct().getId().equals(product.getId()))
+                .findFirst();
+            
+            if (cartItemOpt.isPresent()) {
+                CartItem cartItem = cartItemOpt.get();
+                int currentQuantity = cartItem.getQuantity();
+                int actualRemoved = Math.min(quantityToRemove, currentQuantity);
                 
-                if (itemToRemove != null) {
-                    totalRemoved += itemToRemove.getProduct().getPriceInCents();
-                    cartItemRepository.delete(itemToRemove);
-                    cartItems.remove(itemToRemove);
+                totalRemoved += product.getPriceInCents() * actualRemoved;
+                
+                if (actualRemoved >= currentQuantity) {
+                    // Remove the entire cart item
+                    cartItemRepository.delete(cartItem);
+                    cartItems.remove(cartItem);
+                } else {
+                    // Reduce the quantity
+                    cartItem.setQuantity(currentQuantity - actualRemoved);
+                    cartItemRepository.save(cartItem);
                 }
             }
         }

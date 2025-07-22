@@ -32,8 +32,8 @@ public class BuyRecipeController {
     }
     
     @GetMapping("/carts/{id}")
-    public ResponseEntity<Cart> getCartById(@PathVariable Long id) {
-        Optional<Cart> cart = cartService.getCartById(id);
+    public ResponseEntity<CartResponse> getCartById(@PathVariable Long id) {
+        Optional<CartResponse> cart = cartService.getCartById(id);
         return cart.map(ResponseEntity::ok)
                   .orElse(ResponseEntity.notFound().build());
     }
@@ -68,15 +68,4 @@ public class BuyRecipeController {
         return ResponseEntity.ok(result);
     }
     
-    public static class RecipeRequest {
-        private Long recipeId;
-        
-        public Long getRecipeId() {
-            return recipeId;
-        }
-        
-        public void setRecipeId(Long recipeId) {
-            this.recipeId = recipeId;
-        }
-    }
 }
