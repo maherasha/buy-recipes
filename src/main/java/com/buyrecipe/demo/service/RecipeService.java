@@ -17,7 +17,9 @@ public class RecipeService {
     private RecipeRepository recipeRepository;
     
     public List<RecipeResponse> getAllRecipes() {
-        return recipeRepository.findAll().stream()
+        // Use optimized query to fetch all recipes with their products in a single query
+        // This eliminates N+1 query problem - instead of 1 + N queries, we now have just 1 query
+        return recipeRepository.findAllWithProductsAndDetails().stream()
             .map(this::convertToRecipeResponse)
             .collect(Collectors.toList());
     }

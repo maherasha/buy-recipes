@@ -98,22 +98,22 @@ class CartServiceTest {
     void getAllCarts_ShouldReturnAllCarts() {
         // Given
         List<Cart> expectedCarts = Arrays.asList(testCart);
-        when(cartRepository.findAll()).thenReturn(expectedCarts);
+        when(cartRepository.findAllCartsBasicData()).thenReturn(expectedCarts);
 
         // When
         List<Cart> result = cartService.getAllCarts();
 
         // Then
         assertEquals(expectedCarts, result);
-        verify(cartRepository).findAll();
+        verify(cartRepository).findAllCartsBasicData();
     }
 
     @Test
     void getCartById_WhenCartExists_ShouldReturnCartResponse() {
         // Given
         List<CartItem> cartItems = Arrays.asList(testCartItem1, testCartItem2);
-        when(cartRepository.findById(1L)).thenReturn(Optional.of(testCart));
-        when(cartItemRepository.findByCartId(1L)).thenReturn(cartItems);
+        testCart.setCartItems(cartItems); // Set the cart items directly on the cart
+        when(cartRepository.findByIdWithItemsAndProducts(1L)).thenReturn(Optional.of(testCart));
 
         // When
         Optional<CartResponse> result = cartService.getCartById(1L);
@@ -132,29 +132,27 @@ class CartServiceTest {
         assertEquals(399, item1.getPriceInCents());
         assertEquals(2, item1.getQuantity());
 
-        verify(cartRepository).findById(1L);
-        verify(cartItemRepository).findByCartId(1L);
+        verify(cartRepository).findByIdWithItemsAndProducts(1L);
     }
 
     @Test
     void getCartById_WhenCartNotExists_ShouldReturnEmpty() {
         // Given
-        when(cartRepository.findById(1L)).thenReturn(Optional.empty());
+        when(cartRepository.findByIdWithItemsAndProducts(1L)).thenReturn(Optional.empty());
 
         // When
         Optional<CartResponse> result = cartService.getCartById(1L);
 
         // Then
         assertFalse(result.isPresent());
-        verify(cartRepository).findById(1L);
-        verify(cartItemRepository, never()).findByCartId(anyLong());
+        verify(cartRepository).findByIdWithItemsAndProducts(1L);
     }
 
     @Test
     void addRecipeToCart_WhenCartAndRecipeExist_ShouldAddRecipeSuccessfully() {
         // Given
         when(cartRepository.findById(1L)).thenReturn(Optional.of(testCart));
-        when(recipeRepository.findById(1L)).thenReturn(Optional.of(testRecipe));
+        when(recipeRepository.findByIdWithProductsAndDetails(1L)).thenReturn(Optional.of(testRecipe));
         when(cartItemRepository.findByCartId(1L)).thenReturn(new java.util.ArrayList<>());
 
         // When
@@ -163,7 +161,7 @@ class CartServiceTest {
         // Then
         assertEquals("Recipe added to cart successfully", result);
         verify(cartRepository).findById(1L);
-        verify(recipeRepository).findById(1L);
+        verify(recipeRepository).findByIdWithProductsAndDetails(1L);
         verify(cartItemRepository).findByCartId(1L);
         verify(cartItemRepository, times(2)).save(any(CartItem.class));
         verify(cartRepository).save(testCart);
@@ -183,7 +181,7 @@ class CartServiceTest {
         // Then
         assertNull(result);
         verify(cartRepository).findById(1L);
-        verify(recipeRepository).findById(1L);
+        verify(recipeRepository).findByIdWithProductsAndDetails(1L);
         verify(cartItemRepository, never()).findByCartId(anyLong());
         verify(cartItemRepository, never()).save(any(CartItem.class));
     }
@@ -192,7 +190,7 @@ class CartServiceTest {
     void addRecipeToCart_WhenRecipeNotFound_ShouldReturnErrorMessage() {
         // Given
         when(cartRepository.findById(1L)).thenReturn(Optional.of(testCart));
-        when(recipeRepository.findById(1L)).thenReturn(Optional.empty());
+        when(recipeRepository.findByIdWithProductsAndDetails(1L)).thenReturn(Optional.empty());
 
         // When
         String result = cartService.addRecipeToCart(1L, 1L);
@@ -200,7 +198,7 @@ class CartServiceTest {
         // Then
         assertEquals("Recipe not found", result);
         verify(cartRepository).findById(1L);
-        verify(recipeRepository).findById(1L);
+        verify(recipeRepository).findByIdWithProductsAndDetails(1L);
         verify(cartItemRepository, never()).findByCartId(anyLong());
         verify(cartItemRepository, never()).save(any(CartItem.class));
     }
@@ -210,7 +208,7 @@ class CartServiceTest {
         // Given
         List<CartItem> existingItems = new java.util.ArrayList<>(Arrays.asList(testCartItem1));
         when(cartRepository.findById(1L)).thenReturn(Optional.of(testCart));
-        when(recipeRepository.findById(1L)).thenReturn(Optional.of(testRecipe));
+        when(recipeRepository.findByIdWithProductsAndDetails(1L)).thenReturn(Optional.of(testRecipe));
         when(cartItemRepository.findByCartId(1L)).thenReturn(existingItems);
 
         // When
@@ -228,7 +226,7 @@ class CartServiceTest {
         // Given
         List<CartItem> cartItems = new java.util.ArrayList<>(Arrays.asList(testCartItem1, testCartItem2));
         when(cartRepository.findById(1L)).thenReturn(Optional.of(testCart));
-        when(recipeRepository.findById(1L)).thenReturn(Optional.of(testRecipe));
+        when(recipeRepository.findByIdWithProductsAndDetails(1L)).thenReturn(Optional.of(testRecipe));
         when(cartItemRepository.findByCartId(1L)).thenReturn(cartItems);
 
         // When
@@ -237,7 +235,7 @@ class CartServiceTest {
         // Then
         assertEquals("Recipe removed from cart successfully", result);
         verify(cartRepository).findById(1L);
-        verify(recipeRepository).findById(1L);
+        verify(recipeRepository).findByIdWithProductsAndDetails(1L);
         verify(cartItemRepository).findByCartId(1L);
         verify(cartRepository).save(testCart);
         
@@ -256,14 +254,14 @@ class CartServiceTest {
         // Then
         assertNull(result);
         verify(cartRepository).findById(1L);
-        verify(recipeRepository).findById(1L);
+        verify(recipeRepository).findByIdWithProductsAndDetails(1L);
     }
 
     @Test
     void removeRecipeFromCart_WhenRecipeNotFound_ShouldReturnErrorMessage() {
         // Given
         when(cartRepository.findById(1L)).thenReturn(Optional.of(testCart));
-        when(recipeRepository.findById(1L)).thenReturn(Optional.empty());
+        when(recipeRepository.findByIdWithProductsAndDetails(1L)).thenReturn(Optional.empty());
 
         // When
         String result = cartService.removeRecipeFromCart(1L, 1L);
@@ -271,7 +269,7 @@ class CartServiceTest {
         // Then
         assertEquals("Recipe not found", result);
         verify(cartRepository).findById(1L);
-        verify(recipeRepository).findById(1L);
+        verify(recipeRepository).findByIdWithProductsAndDetails(1L);
         verify(cartItemRepository, never()).findByCartId(anyLong());
         verify(cartRepository, never()).save(any(Cart.class));
     }
@@ -282,7 +280,7 @@ class CartServiceTest {
         testCartItem1.setQuantity(1); // Less than recipe requirement (2)
         List<CartItem> cartItems = new java.util.ArrayList<>(Arrays.asList(testCartItem1));
         when(cartRepository.findById(1L)).thenReturn(Optional.of(testCart));
-        when(recipeRepository.findById(1L)).thenReturn(Optional.of(testRecipe));
+        when(recipeRepository.findByIdWithProductsAndDetails(1L)).thenReturn(Optional.of(testRecipe));
         when(cartItemRepository.findByCartId(1L)).thenReturn(cartItems);
 
         // When
@@ -300,7 +298,7 @@ class CartServiceTest {
         testCartItem1.setQuantity(5); // More than recipe requirement (2)
         List<CartItem> cartItems = new java.util.ArrayList<>(Arrays.asList(testCartItem1));
         when(cartRepository.findById(1L)).thenReturn(Optional.of(testCart));
-        when(recipeRepository.findById(1L)).thenReturn(Optional.of(testRecipe));
+        when(recipeRepository.findByIdWithProductsAndDetails(1L)).thenReturn(Optional.of(testRecipe));
         when(cartItemRepository.findByCartId(1L)).thenReturn(cartItems);
 
         // When

@@ -23,6 +23,7 @@ public class BuyRecipeController {
     
     @GetMapping("/carts")
     public List<Cart> getAllCarts() {
+        // use pagination for optimization in case of large sets
         return cartService.getAllCarts();
     }
     

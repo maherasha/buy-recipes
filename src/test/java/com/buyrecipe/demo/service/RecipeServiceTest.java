@@ -90,7 +90,7 @@ class RecipeServiceTest {
     void getAllRecipes_WhenRecipesExist_ShouldReturnRecipeResponseList() {
         // Given
         List<Recipe> recipes = Arrays.asList(testRecipe1, testRecipe2);
-        when(recipeRepository.findAll()).thenReturn(recipes);
+        when(recipeRepository.findAllWithProductsAndDetails()).thenReturn(recipes);
 
         // When
         List<RecipeResponse> result = recipeService.getAllRecipes();
@@ -128,20 +128,20 @@ class RecipeServiceTest {
         assertEquals(1299, product3.getPriceInCents());
         assertEquals(1, product3.getQuantity());
 
-        verify(recipeRepository).findAll();
+        verify(recipeRepository).findAllWithProductsAndDetails();
     }
 
     @Test
     void getAllRecipes_WhenNoRecipesExist_ShouldReturnEmptyList() {
         // Given
-        when(recipeRepository.findAll()).thenReturn(Collections.emptyList());
+        when(recipeRepository.findAllWithProductsAndDetails()).thenReturn(Collections.emptyList());
 
         // When
         List<RecipeResponse> result = recipeService.getAllRecipes();
 
         // Then
         assertTrue(result.isEmpty());
-        verify(recipeRepository).findAll();
+        verify(recipeRepository).findAllWithProductsAndDetails();
     }
 
     @Test
@@ -152,7 +152,7 @@ class RecipeServiceTest {
         emptyRecipe.setName("Empty Recipe");
         emptyRecipe.setRecipeProducts(Collections.emptyList());
         
-        when(recipeRepository.findAll()).thenReturn(Arrays.asList(emptyRecipe));
+        when(recipeRepository.findAllWithProductsAndDetails()).thenReturn(Arrays.asList(emptyRecipe));
 
         // When
         List<RecipeResponse> result = recipeService.getAllRecipes();
@@ -164,14 +164,14 @@ class RecipeServiceTest {
         assertEquals("Empty Recipe", recipeResponse.getName());
         assertTrue(recipeResponse.getProducts().isEmpty());
 
-        verify(recipeRepository).findAll();
+        verify(recipeRepository).findAllWithProductsAndDetails();
     }
 
     @Test
     void getAllRecipes_WhenRepositoryThrowsException_ShouldPropagateException() {
         // Given
         RuntimeException expectedException = new RuntimeException("Database error");
-        when(recipeRepository.findAll()).thenThrow(expectedException);
+        when(recipeRepository.findAllWithProductsAndDetails()).thenThrow(expectedException);
 
         // When & Then
         RuntimeException thrown = assertThrows(RuntimeException.class, () -> {
@@ -179,14 +179,14 @@ class RecipeServiceTest {
         });
 
         assertEquals("Database error", thrown.getMessage());
-        verify(recipeRepository).findAll();
+        verify(recipeRepository).findAllWithProductsAndDetails();
     }
 
     @Test
     void convertToRecipeResponse_ShouldCorrectlyMapAllFields() {
         // This test verifies the private method through the public getAllRecipes method
         // Given
-        when(recipeRepository.findAll()).thenReturn(Arrays.asList(testRecipe1));
+        when(recipeRepository.findAllWithProductsAndDetails()).thenReturn(Arrays.asList(testRecipe1));
 
         // When
         List<RecipeResponse> result = recipeService.getAllRecipes();
@@ -224,7 +224,7 @@ class RecipeServiceTest {
         singleRecipeProduct.setQuantity(3);
         singleProductRecipe.setRecipeProducts(Arrays.asList(singleRecipeProduct));
 
-        when(recipeRepository.findAll()).thenReturn(Arrays.asList(testRecipe1, singleProductRecipe));
+        when(recipeRepository.findAllWithProductsAndDetails()).thenReturn(Arrays.asList(testRecipe1, singleProductRecipe));
 
         // When
         List<RecipeResponse> result = recipeService.getAllRecipes();
@@ -240,6 +240,6 @@ class RecipeServiceTest {
         assertEquals("Simple Recipe", result.get(1).getName());
         assertEquals(3, result.get(1).getProducts().get(0).getQuantity());
 
-        verify(recipeRepository).findAll();
+        verify(recipeRepository).findAllWithProductsAndDetails();
     }
 }

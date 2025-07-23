@@ -24,17 +24,16 @@ public class CartService {
     private CartItemRepository cartItemRepository;
     
     public List<Cart> getAllCarts() {
-        return cartRepository.findAll();
+        return cartRepository.findAllCartsBasicData();
     }
     
     public Optional<CartResponse> getCartById(Long id) {
-        Optional<Cart> cartOpt = cartRepository.findById(id);
-        return cartOpt.map(this::convertToCartResponse);
+        Optional<Cart> cartOpt = cartRepository.findByIdWithItemsAndProducts(id);
+        return cartOpt.map(this::convertToCartResponseOptimized);
     }
-    
-    private CartResponse convertToCartResponse(Cart cart) {
-        List<CartItem> cartItems = cartItemRepository.findByCartId(cart.getId());
-        List<CartItemResponse> cartItemResponses = cartItems.stream()
+
+    private CartResponse convertToCartResponseOptimized(Cart cart) {
+        List<CartItemResponse> cartItemResponses = cart.getCartItems().stream()
             .map(item -> new CartItemResponse(
                 item.getId(),
                 item.getProduct().getId(),
@@ -49,7 +48,7 @@ public class CartService {
     
     public String addRecipeToCart(Long cartId, Long recipeId) {
         Optional<Cart> cartOpt = cartRepository.findById(cartId);
-        Optional<Recipe> recipeOpt = recipeRepository.findById(recipeId);
+        Optional<Recipe> recipeOpt = recipeRepository.findByIdWithProductsAndDetails(recipeId);
         
         if (cartOpt.isEmpty()) {
             return null; // Cart not found
@@ -101,7 +100,8 @@ public class CartService {
     
     public String removeRecipeFromCart(Long cartId, Long recipeId) {
         Optional<Cart> cartOpt = cartRepository.findById(cartId);
-        Optional<Recipe> recipeOpt = recipeRepository.findById(recipeId);
+        // Use optimized query to fetch recipe with its products in a single query
+        Optional<Recipe> recipeOpt = recipeRepository.findByIdWithProductsAndDetails(recipeId);
         
         if (cartOpt.isEmpty()) {
             return null; // Cart not found
