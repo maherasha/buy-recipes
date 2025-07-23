@@ -1,0 +1,278 @@
+openapi: 3.0.3
+info:
+  title: Buy Recipe API
+  description: |
+    E-commerce API for managing shopping carts and purchasing recipes.
+    
+    This API allows users to:
+    - Manage shopping carts
+    - View available recipes (collections of products)
+    - Add/remove entire recipes to their carts
+    - View detailed cart information including all items
+  version: 1.0.0
+  contact:
+    name: Buy Recipe Support
+    email: support@buyrecipe.com
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+paths:
+  /buy-recipe/carts:
+    get:
+      tags:
+        - Carts
+      summary: Get all carts
+      description: Retrieves a list of all carts with basic information (id, totalAmount)
+      operationId: getAllCarts
+      responses:
+        '200':
+          description: Successfully retrieved all carts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CartBasic'
+
+  /buy-recipe/carts/{cartId}:
+    get:
+      tags:
+        - Carts
+      summary: Get cart by ID
+      description: Retrieves detailed information about a specific cart including all cart items
+      operationId: getCartById
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          description: ID of the cart to retrieve
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Cart found successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '404':
+          description: Cart not found
+
+  /buy-recipe/recipes:
+    get:
+      tags:
+        - Recipes
+      summary: Get all recipes
+      description: Retrieves a list of all available recipes with their products
+      operationId: getAllRecipes
+      responses:
+        '200':
+          description: Successfully retrieved all recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeResponse'
+
+  /buy-recipe/carts/{cartId}/add_recipe:
+    post:
+      tags:
+        - Cart Operations
+      summary: Add recipe to cart
+      description: Adds all products from a recipe to the specified cart
+      operationId: addRecipeToCart
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          description: ID of the cart to add recipe to
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        description: Recipe request containing the recipe ID to add
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeRequest'
+      responses:
+        '200':
+          description: Recipe successfully added to cart
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Recipe added to cart successfully"
+        '400':
+          description: Recipe not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Recipe not found"
+        '404':
+          description: Cart not found
+
+  /buy-recipe/carts/{cartId}/recipes/{recipeId}:
+    delete:
+      tags:
+        - Cart Operations
+      summary: Remove recipe from cart
+      description: Removes all products associated with a recipe from the specified cart
+      operationId: removeRecipeFromCart
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          description: ID of the cart to remove recipe from
+          schema:
+            type: integer
+            format: int64
+        - name: recipeId
+          in: path
+          required: true
+          description: ID of the recipe to remove
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Recipe successfully removed from cart
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Recipe removed from cart successfully"
+        '400':
+          description: Recipe not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Recipe not found"
+        '404':
+          description: Cart not found
+
+components:
+  schemas:
+    CartBasic:
+      type: object
+      required:
+        - id
+        - totalAmount
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        totalAmount:
+          type: integer
+          format: int32
+          example: 1500
+
+    CartResponse:
+      type: object
+      required:
+        - id
+        - totalAmount
+        - cartItems
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        totalAmount:
+          type: integer
+          format: int32
+          example: 1500
+        cartItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItemResponse'
+
+    CartItemResponse:
+      type: object
+      required:
+        - id
+        - productId
+        - productName
+        - priceInCents
+        - quantity
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        productId:
+          type: integer
+          format: int64
+          example: 101
+        productName:
+          type: string
+          example: "Tomatoes"
+        priceInCents:
+          type: integer
+          format: int32
+          example: 399
+        quantity:
+          type: integer
+          format: int32
+          example: 2
+
+    RecipeResponse:
+      type: object
+      required:
+        - id
+        - name
+        - products
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: "Pasta with Tomato Sauce"
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeProductResponse'
+
+    RecipeProductResponse:
+      type: object
+      required:
+        - productId
+        - productName
+        - priceInCents
+        - quantity
+      properties:
+        productId:
+          type: integer
+          format: int64
+          example: 101
+        productName:
+          type: string
+          example: "Tomatoes"
+        priceInCents:
+          type: integer
+          format: int32
+          example: 399
+        quantity:
+          type: integer
+          format: int32
+          example: 2
+
+    RecipeRequest:
+      type: object
+      required:
+        - recipeId
+      properties:
+        recipeId:
+          type: integer
+          format: int64
+          example: 1
