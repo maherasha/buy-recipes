@@ -11,9 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
@@ -22,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(locations = "classpath:application-test.properties")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class BuyRecipeControllerIntegrationTest {
 
     @LocalServerPort
@@ -50,78 +47,79 @@ public class BuyRecipeControllerIntegrationTest {
     private Cart testCart2;
     private Product testProduct1;
     private Product testProduct2;
-    private CartItem testCartItem1;
-    private CartItem testCartItem2;
     private Recipe testRecipe;
-    private RecipeProduct testRecipeProduct1;
-    private RecipeProduct testRecipeProduct2;
 
     @BeforeEach
     void setUp() {
+        // Clean database and setup fresh test data
+        cleanDatabase();
+        setupTestData();
+    }
+
+    private void cleanDatabase() {
         // Clean up database to ensure fresh state
         cartItemRepository.deleteAll();
         cartRepository.deleteAll();
         recipeProductRepository.deleteAll();
         recipeRepository.deleteAll();
         productRepository.deleteAll();
+    }
 
+    private void setupTestData() {
         // Create test products
-        testProduct1 = new Product();
-        testProduct1.setName("Tomatoes");
-        testProduct1.setPriceInCents(399);
-        testProduct1 = productRepository.save(testProduct1);
-
-        testProduct2 = new Product();
-        testProduct2.setName("Onions");
-        testProduct2.setPriceInCents(250);
-        testProduct2 = productRepository.save(testProduct2);
+        testProduct1 = productRepository.save(createProduct("Tomatoes", 399));
+        testProduct2 = productRepository.save(createProduct("Onions", 250));
 
         // Create test carts
-        testCart1 = new Cart();
-        testCart1.setTotalAmount(649); // 399 + 250
-        testCart1 = cartRepository.save(testCart1);
-
-        testCart2 = new Cart();
-        testCart2.setTotalAmount(798); // 399 * 2
-        testCart2 = cartRepository.save(testCart2);
+        testCart1 = cartRepository.save(createCart(649));
+        testCart2 = cartRepository.save(createCart(798));
 
         // Create test cart items
-        testCartItem1 = new CartItem();
-        testCartItem1.setCartId(testCart1.getId());
-        testCartItem1.setProduct(testProduct1);
-        testCartItem1.setQuantity(1);
-        cartItemRepository.save(testCartItem1);
-
-        testCartItem2 = new CartItem();
-        testCartItem2.setCartId(testCart1.getId());
-        testCartItem2.setProduct(testProduct2);
-        testCartItem2.setQuantity(1);
-        cartItemRepository.save(testCartItem2);
-
-        // Cart 2 has 2 tomatoes
-        CartItem cartItem3 = new CartItem();
-        cartItem3.setCartId(testCart2.getId());
-        cartItem3.setProduct(testProduct1);
-        cartItem3.setQuantity(2);
-        cartItemRepository.save(cartItem3);
+        cartItemRepository.save(createCartItem(testCart1.getId(), testProduct1, 1));
+        cartItemRepository.save(createCartItem(testCart1.getId(), testProduct2, 1));
+        cartItemRepository.save(createCartItem(testCart2.getId(), testProduct1, 2));
 
         // Create test recipe
-        testRecipe = new Recipe();
-        testRecipe.setName("Tomato and Onion Salad");
-        testRecipe = recipeRepository.save(testRecipe);
+        testRecipe = recipeRepository.save(createRecipe("Tomato and Onion Salad"));
 
         // Create recipe products
-        testRecipeProduct1 = new RecipeProduct();
-        testRecipeProduct1.setRecipe(testRecipe);
-        testRecipeProduct1.setProduct(testProduct1);
-        testRecipeProduct1.setQuantity(2);
-        recipeProductRepository.save(testRecipeProduct1);
+        recipeProductRepository.save(createRecipeProduct(testRecipe, testProduct1, 2));
+        recipeProductRepository.save(createRecipeProduct(testRecipe, testProduct2, 1));
+    }
 
-        testRecipeProduct2 = new RecipeProduct();
-        testRecipeProduct2.setRecipe(testRecipe);
-        testRecipeProduct2.setProduct(testProduct2);
-        testRecipeProduct2.setQuantity(1);
-        recipeProductRepository.save(testRecipeProduct2);
+    private Product createProduct(String name, int priceInCents) {
+        Product product = new Product();
+        product.setName(name);
+        product.setPriceInCents(priceInCents);
+        return product;
+    }
+
+    private Cart createCart(int totalAmount) {
+        Cart cart = new Cart();
+        cart.setTotalAmount(totalAmount);
+        return cart;
+    }
+
+    private CartItem createCartItem(Long cartId, Product product, int quantity) {
+        CartItem cartItem = new CartItem();
+        cartItem.setCartId(cartId);
+        cartItem.setProduct(product);
+        cartItem.setQuantity(quantity);
+        return cartItem;
+    }
+
+    private Recipe createRecipe(String name) {
+        Recipe recipe = new Recipe();
+        recipe.setName(name);
+        return recipe;
+    }
+
+    private RecipeProduct createRecipeProduct(Recipe recipe, Product product, int quantity) {
+        RecipeProduct recipeProduct = new RecipeProduct();
+        recipeProduct.setRecipe(recipe);
+        recipeProduct.setProduct(product);
+        recipeProduct.setQuantity(quantity);
+        return recipeProduct;
     }
 
     @Test
